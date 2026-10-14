@@ -1,0 +1,40 @@
+# Выкладывает содержимое репозитория на GitHub Pages.
+#
+# Нужен потому, что переключатель «Развертывание из филиала» в настройках не
+# сохранялся: кнопка оставалась серой, и Pages так и не включался. У источника
+# «GitHub Actions» кнопки сохранения нет вовсе — выбор применяется сразу, а
+# всю работу делает этот файл.
+#
+# Выкладывается репозиторий как есть: в нём и так лежит только собранная
+# страница. Папки .git и .github upload-pages-artifact исключает сам.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  # Позволяет запустить сборку руками со вкладки Actions.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
