@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    A hosting platform serves the game from a path that is not known at build
+    time: a hashed folder on the games portal, an itch.io subdomain, anywhere.
+    A relative base is the only value that works in all of them, so this file
+    pins "./" instead of leaving the / placeholder for
+    --base-href to fill in.
+  -->
+  <base href="./">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <!--
+    The game lives in an iframe on a phone. Without this, a double tap zooms
+    the page instead of turning a knot, and the board drifts out of frame.
+  -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Weave вЂ” РіРѕР»РѕРІРѕР»РѕРјРєР° РїСЂРѕ РїР»РµС‚РµРЅРёРµ РЅРёС‚РµР№.">
+
+  <style>
+    /* РџРѕРєР° Dart РєРѕРјРїРёР»РёСЂСѓРµС‚СЃСЏ Рё РіСЂСѓР·РёС‚СЃСЏ, СЃС‚СЂР°РЅРёС†Р° РёРЅР°С‡Рµ РїСЂРѕСЃС‚Рѕ Р±РµР»Р°СЏ вЂ” Рё
+       СЌС‚Рѕ РЅРµРѕС‚Р»РёС‡РёРјРѕ РѕС‚ РїРѕР»РѕРјРєРё. Flutter СЂРёСЃСѓРµС‚ РїРѕРІРµСЂС…, С‚Р°Рє С‡С‚Рѕ Р·Р°СЃС‚Р°РІРєР°
+       РёСЃС‡РµР·Р°РµС‚ СЃР°РјР°, РєР°Рє С‚РѕР»СЊРєРѕ РїРѕСЏРІР»СЏРµС‚СЃСЏ РїРµСЂРІС‹Р№ РєР°РґСЂ. */
+    html, body {
+      margin: 0; height: 100%; background: #F7F1E8;
+      /* Р’РЅСѓС‚СЂРё iframe РЅР° С‚РµР»РµС„РѕРЅРµ Р¶РµСЃС‚ РІРЅРёР· РёРЅР°С‡Рµ С‚СЏРЅРµС‚ СЃС‚СЂР°РЅРёС†Сѓ Рё РІРєР»СЋС‡Р°РµС‚
+         РѕР±РЅРѕРІР»РµРЅРёРµ, Р° С‚Р°Рї РїРѕ СѓР·Р»Сѓ РїСЂРµРІСЂР°С‰Р°РµС‚СЃСЏ РІ РЅР°С‡Р°Р»Рѕ РїСЂРѕРєСЂСѓС‚РєРё. */
+      overscroll-behavior: none;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+      /* РџСѓРЅРєС‚ 1.6.2.7: РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёРµ СЃ РїРѕР»РµРј РёРіСЂС‹ РЅРµ РґРѕР»Р¶РЅРѕ РІС‹РґРµР»СЏС‚СЊ РµРіРѕ
+         Рё РЅРµ РґРѕР»Р¶РЅРѕ РѕС‚РєСЂС‹РІР°С‚СЊ РєРѕРЅС‚РµРєСЃС‚РЅРѕРµ РјРµРЅСЋ. Р”РѕСЃРєР° СЂРёСЃСѓРµС‚СЃСЏ РЅР° canvas,
+         РІС‹РґРµР»СЏС‚СЊ РІ РЅРµР№ РЅРµС‡РµРіРѕ, РЅРѕ Р±СЂР°СѓР·РµСЂ РѕР± СЌС‚РѕРј РЅРµ Р·РЅР°РµС‚ Рё РЅР° РїСЂРѕС‚СЏР¶РєРµ
+         РјС‹С€СЊСЋ РІС‹РґРµР»СЏРµС‚ РІСЃС‘ РїРѕРґСЂСЏРґ. */
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    #boot {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
+      font: 500 14px/1.4 system-ui, sans-serif; color: #9A8D9E;
+    }
+    #boot .ring {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 3px solid #E4D8C8; border-top-color: #EFB765;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>Weave</title>
+  <script src="weave_audio.js"></script>
+  <script>
+    // РџСЂР°РІС‹Р№ РєР»РёРє РїРѕ РёРіСЂРµ РѕС‚РєСЂС‹РІР°Р» Р±С‹ РјРµРЅСЋ Р±СЂР°СѓР·РµСЂР° РїРѕРІРµСЂС… РґРѕСЃРєРё вЂ” С‚Р°Рј
+    // В«РЎРѕС…СЂР°РЅРёС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµВ» Рё В«РџРѕСЃРјРѕС‚СЂРµС‚СЊ РєРѕРґВ», РЅРёС‡РµРіРѕ РёРіСЂРѕРІРѕРіРѕ.
+    document.addEventListener("contextmenu", function (e) {
+      e.preventDefault();
+    });
+  </script>
+</head>
+<body>
+  <div id="boot"><div class="ring"></div><div id="boot-word">РўРєС‘Рј РїРѕР»РѕС‚РЅРѕвЂ¦</div></div>
+  <script>
+    // Р—Р°СЃС‚Р°РІРєР° СЂРёСЃСѓРµС‚СЃСЏ РґРѕ С‚РѕРіРѕ, РєР°Рє Р·Р°РїСѓСЃС‚РёС‚СЃСЏ Dart, РїРѕСЌС‚РѕРјСѓ СЏР·С‹Рє РґР»СЏ РЅРµС‘
+    // Р±РµСЂС‘С‚СЃСЏ Сѓ Р±СЂР°СѓР·РµСЂР°, Р° РЅРµ Сѓ SDK: РµРіРѕ init РµС‰С‘ РЅРµ СѓСЃРїРµР» РѕС‚РІРµС‚РёС‚СЊ, Р° Р¶РґР°С‚СЊ
+    // РѕС‚РІРµС‚Р° СЂР°РґРё РѕРґРЅРѕРіРѕ СЃР»РѕРІР° вЂ” Р·РЅР°С‡РёС‚ РїРѕРєР°Р·Р°С‚СЊ РїСѓСЃС‚РѕР№ СЌРєСЂР°РЅ.
+    (function () {
+      try {
+        var lang = (navigator.language || 'ru').toLowerCase();
+        if (lang.indexOf('ru') !== 0 && lang.indexOf('be') !== 0 &&
+            lang.indexOf('uk') !== 0 && lang.indexOf('kk') !== 0) {
+          document.getElementById('boot-word').textContent = 'WeavingвЂ¦';
+        }
+      } catch (e) { /* РѕСЃС‚Р°С‘С‚СЃСЏ СЂСѓСЃСЃРєРѕРµ СЃР»РѕРІРѕ */ }
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // РЎС‚РѕСЂРѕР¶ Р·Р°РіСЂСѓР·РєРё.
+    //
+    // Р—Р°СЃС‚Р°РІРєСѓ РїРµСЂРµРєСЂС‹РІР°РµС‚ С…РѕР»СЃС‚ РёРіСЂС‹, РїРѕСЌС‚РѕРјСѓ В«РІРµС‡РЅР°СЏВ» Р·Р°СЃС‚Р°РІРєР° РѕР·РЅР°С‡Р°РµС‚
+    // РѕРґРЅРѕ: РґРІРёР¶РѕРє РЅРµ РґРѕС€С‘Р» РґРѕ РїРµСЂРІРѕРіРѕ РєР°РґСЂР°. РќР° РїСЂР°РєС‚РёРєРµ С‚Р°Рє РІРµРґС‘С‚ СЃРµР±СЏ
+    // Р±СЂР°СѓР·РµСЂ СЃРѕ СЃС‚Р°СЂС‹Рј СЃР»СѓР¶РµР±РЅС‹Рј РІРѕСЂРєРµСЂРѕРј: РїРѕСЃР»Рµ РѕР±РЅРѕРІР»РµРЅРёСЏ РѕРЅ РѕС‚РґР°С‘С‚
+    // РІРїРµСЂРµРјРµС€РєСѓ СЃС‚Р°СЂС‹Рµ Рё РЅРѕРІС‹Рµ С„Р°Р№Р»С‹, Рё Р·Р°РіСЂСѓР·РєР° РІСЃС‚Р°С‘С‚. РРіСЂРѕРє РІРёРґРёС‚
+    // Р±РµСЃРєРѕРЅРµС‡РЅРѕРµ РєРѕР»СЊС†Рѕ Рё СѓС…РѕРґРёС‚, Р° РґР»СЏ РїР»РѕС‰Р°РґРєРё СЌС‚Рѕ В«РёРіСЂР° РЅРµ Р·Р°РїСѓСЃРєР°РµС‚СЃСЏВ».
+    //
+    // РџРѕСЌС‚РѕРјСѓ: РґРѕР¶РґР°С‚СЊСЃСЏ РїРµСЂРІРѕРіРѕ РєР°РґСЂР° Рё СѓР±СЂР°С‚СЊ Р·Р°СЃС‚Р°РІРєСѓ; РµСЃР»Рё РєР°РґСЂР° РЅРµС‚
+    // С‡РµСЂРµР· РґРµСЃСЏС‚СЊ СЃРµРєСѓРЅРґ вЂ” РѕРґРёРЅ СЂР°Р· СЃРЅСЏС‚СЊ РІРѕСЂРєРµСЂС‹, РІС‹С‡РёСЃС‚РёС‚СЊ РєСЌС€ Рё
+    // РїРµСЂРµР·Р°РіСЂСѓР·РёС‚СЊСЃСЏ; РµСЃР»Рё Рё РїРѕСЃР»Рµ СЌС‚РѕРіРѕ РЅРµС‚ вЂ” СЃРєР°Р·Р°С‚СЊ СЃР»РѕРІР°РјРё.
+    (function () {
+      // Р›РѕРєР°Р»СЊРЅС‹Р№ Р·Р°РїСѓСЃРє: Р±СЂР°СѓР·РµСЂ РјРѕРі Р·Р°РєСЌС€РёСЂРѕРІР°С‚СЊ РїСЂРѕС€Р»СѓСЋ СЃР±РѕСЂРєСѓ С‡РµСЂРµР·
+      // СЃР»СѓР¶РµР±РЅС‹Р№ РІРѕСЂРєРµСЂ, Рё С‚РѕРіРґР° РёРіСЂР° РѕС‚РєСЂС‹Р»Р°СЃСЊ Р±С‹ СЃС‚Р°СЂР°СЏ вЂ” Р±РµР· С‚РѕРіРѕ, С‡С‚Рѕ
+      // С‚РѕР»СЊРєРѕ С‡С‚Рѕ СЃРѕР±СЂР°РЅРѕ. РќР° РїР»РѕС‰Р°РґРєРµ СЌС‚РѕРіРѕ РЅРµ РґРµР»Р°РµРј.
+      var local = location.hostname === 'localhost' ||
+                  location.hostname === '127.0.0.1';
+      // Р›РѕРєР°Р»СЊРЅС‹Р№ Р·Р°РїСѓСЃРє РѕР±СЏР·Р°РЅ РїРѕРєР°Р·С‹РІР°С‚СЊ СЃРІРµР¶СѓСЋ СЃР±РѕСЂРєСѓ. РЎРЅСЏС‚СЊ
+      // service worker Рё РїРѕС‡РёСЃС‚РёС‚СЊ РєРµС€ РјР°Р»Рѕ: СЃС‚СЂР°РЅРёС†Р° Рє СЌС‚РѕРјСѓ РјРѕРјРµРЅС‚Сѓ СѓР¶Рµ
+      // Р·Р°РіСЂСѓР·РёР»Р°СЃСЊ РёР· СЃС‚Р°СЂРѕРіРѕ РєРµС€Р°, Рё РїСЂР°РІРєСѓ РІРёРґРЅРѕ С‚РѕР»СЊРєРѕ СЃРѕ СЃР»РµРґСѓСЋС‰РµРіРѕ
+      // РѕС‚РєСЂС‹С‚РёСЏ. РџРѕСЌС‚РѕРјСѓ РїРѕСЃР»Рµ С‡РёСЃС‚РєРё СЃС‚СЂР°РЅРёС†Р° РѕРґРёРЅ СЂР°Р· РїРµСЂРµР·Р°РіСЂСѓР¶Р°РµС‚СЃСЏ вЂ”
+      // С„Р»Р°Рі РІ sessionStorage РЅРµ РґР°С‘С‚ Р·Р°С†РёРєР»РёС‚СЊСЃСЏ.
+      if (local && navigator.serviceWorker &&
+          navigator.serviceWorker.getRegistrations) {
+        var cleaned = false;
+        var jobs = [
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            regs.forEach(function (r) { cleaned = true; r.unregister(); });
+          }).catch(function () {})
+        ];
+        if (window.caches && caches.keys) {
+          jobs.push(caches.keys().then(function (keys) {
+            keys.forEach(function (k) { cleaned = true; caches.delete(k); });
+          }).catch(function () {}));
+        }
+        Promise.all(jobs).then(function () {
+          if (!cleaned) return;
+          try {
+            if (sessionStorage.getItem('weave-fresh')) return;
+            sessionStorage.setItem('weave-fresh', '1');
+          } catch (e) {}
+          location.reload();
+        });
+      }
+
+      var boot = document.getElementById('boot');
+      var word = document.getElementById('boot-word');
+      var ru = !word || word.textContent.indexOf('W') !== 0;
+      var done = false;
+
+      window.addEventListener('flutter-first-frame', function () {
+        done = true;
+        if (boot) boot.remove();
+      });
+
+      function retriedAlready() {
+        try {
+          return sessionStorage.getItem('weave.boot.retry') === '1';
+        } catch (e) {
+          return true; // РїСЂРёРІР°С‚РЅС‹Р№ СЂРµР¶РёРј: РїРµСЂРµР·Р°РіСЂСѓР¶Р°С‚СЊ РІСЃР»РµРїСѓСЋ РЅРµР»СЊР·СЏ
+        }
+      }
+
+      setTimeout(function () {
+        if (done) return;
+        if (retriedAlready()) {
+          if (word) {
+            word.textContent = ru
+              ? 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РёРіСЂСѓ. РћР±РЅРѕРІРёС‚Рµ СЃС‚СЂР°РЅРёС†Сѓ.'
+              : 'The game could not load. Please refresh the page.';
+          }
+          return;
+        }
+        try {
+          sessionStorage.setItem('weave.boot.retry', '1');
+        } catch (e) { /* РЅРµ СЃС‚СЂР°С€РЅРѕ: РїРµСЂРµР·Р°РіСЂСѓР·РєР° РІСЃС‘ СЂР°РІРЅРѕ РѕРґРЅР° */ }
+
+        var jobs = [];
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+          jobs.push(
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister(); }));
+            })
+          );
+        }
+        if (window.caches && caches.keys) {
+          jobs.push(
+            caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            })
+          );
+        }
+        Promise.all(jobs).catch(function () {}).then(function () {
+          location.reload();
+        });
+      }, 10000);
+    })();
+  </script>
+
+</body>
+</html>
