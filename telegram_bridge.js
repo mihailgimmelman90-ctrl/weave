@@ -90,7 +90,81 @@
     });
   }
 
+  // --- реклама AdsGram -------------------------------------------------------
+  //
+  // AdsGram показывает рекламу только внутри Telegram: он сверяется с данными
+  // запуска. Его скрипт подключён с async, как и скрипт Telegram, — поэтому
+  // мост ждёт и его, но тоже не дольше нескольких секунд.
+
+  var ads = null;
+  // Последнее служебное событие AdsGram. По нему отказ show() делится на
+  // «нет рекламы», «слишком часто» и прочие ошибки — игроку о них говорят
+  // разное.
+  var adEvent = '';
+
+  function initAds(blockId, debug) {
+    return new Promise(function (resolve) {
+      if (!app || !blockId) return resolve(false);
+      var started = Date.now();
+      (function poll() {
+        if (window.Adsgram && typeof window.Adsgram.init === 'function') {
+          try {
+            ads = window.Adsgram.init({ blockId: String(blockId), debug: !!debug });
+            // Подписка гасит стандартные окна AdsGram — они по-английски и
+            // поверх игры. Игроку ответит героиня, своими словами.
+            ['onBannerNotFound', 'onNonStopShow', 'onTooLongSession', 'onError']
+              .forEach(function (name) {
+                ads.addEventListener(name, function () { adEvent = name; });
+              });
+            return resolve(true);
+          } catch (e) {
+            console.warn('[weave] AdsGram не завёлся', e);
+            return resolve(false);
+          }
+        }
+        if (Date.now() - started > WAIT_MS) return resolve(false);
+        setTimeout(poll, 100);
+      })();
+    });
+  }
+
+  /**
+   * Показать рекламу с наградой. Ответ — строка:
+   *   watched  — досмотрел до конца, награду выдавать;
+   *   skipped  — закрыл раньше;
+   *   nofill   — рекламы под этого игрока сейчас нет;
+   *   often    — смотрит подряд или сессия слишком долгая;
+   *   error    — что-то сломалось при показе;
+   *   none     — реклама не подключена.
+   */
+  function showRewarded() {
+    return new Promise(function (resolve) {
+      if (!ads) return resolve('none');
+      adEvent = '';
+      function why() {
+        if (adEvent === 'onBannerNotFound') return 'nofill';
+        if (adEvent === 'onNonStopShow' || adEvent === 'onTooLongSession') {
+          return 'often';
+        }
+        return '';
+      }
+      try {
+        ads.show().then(function (r) {
+          resolve(r && r.done ? 'watched' : why() || 'skipped');
+        }).catch(function (r) {
+          resolve(why() || (r && r.error ? 'error' : 'skipped'));
+        });
+      } catch (e) {
+        console.warn('[weave] AdsGram: show бросил', e);
+        resolve('error');
+      }
+    });
+  }
+
   window.WeaveTelegram = {
+    initAds: initAds,
+    showRewarded: showRewarded,
+
     /** true — игра открыта внутри Telegram и облако доступно. */
     init: init,
 
