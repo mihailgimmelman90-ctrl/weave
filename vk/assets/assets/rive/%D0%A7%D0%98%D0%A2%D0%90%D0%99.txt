@@ -1,0 +1,2 @@
+Сюда кладётся heroine.riv из редактора Rive.
+Договор с файлом описан в lib/heroine/heroine_rive.dart.
