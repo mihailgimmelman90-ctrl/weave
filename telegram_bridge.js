@@ -170,9 +170,99 @@
     });
   }
 
+  // --- приглашения ------------------------------------------------------------
+
+  /** Сервер бота (tool/bot/worker.js): ему игра сообщает о пришедшем друге. */
+  var BOT_SERVER = 'https://weave-bot.mihailgimmelman90.workers.dev';
+
+  function user() {
+    try {
+      return (app && app.initDataUnsafe && app.initDataUnsafe.user) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   window.WeaveTelegram = {
     initAds: initAds,
     showRewarded: showRewarded,
+
+    /** Номер игрока в Telegram строкой; '' — не в Telegram. */
+    userId: function () {
+      var u = user();
+      return u && u.id ? String(u.id) : '';
+    },
+
+    /** Параметр из ссылки `…/play?startapp=<параметр>`; '' — его нет. */
+    startParam: function () {
+      try {
+        return (app && app.initDataUnsafe && app.initDataUnsafe.start_param) || '';
+      } catch (e) {
+        return '';
+      }
+    },
+
+    /**
+     * Окно Telegram «Переслать»: игрок выбирает чат, в сообщении — текст и
+     * ссылка. Своего сервера для этого не нужно.
+     */
+    share: function (url, text) {
+      try {
+        if (!app) return false;
+        app.openTelegramLink(
+          'https://t.me/share/url?url=' + encodeURIComponent(url) +
+            '&text=' + encodeURIComponent(text)
+        );
+        return true;
+      } catch (e) {
+        console.warn('[weave] Telegram: поделиться не вышло', e);
+        return false;
+      }
+    },
+
+    /**
+     * Разрешение боту писать игроку — без него бот не сможет сказать
+     * пригласившему, что друг пришёл. Окно Telegram показывает один раз;
+     * если разрешение уже есть, ответ приходит сразу.
+     */
+    requestWriteAccess: function () {
+      return new Promise(function (resolve) {
+        try {
+          if (!app || typeof app.requestWriteAccess !== 'function') return resolve(false);
+          var done = false;
+          setTimeout(function () {
+            if (!done) { done = true; resolve(false); }
+          }, 60000);
+          app.requestWriteAccess(function (granted) {
+            if (!done) { done = true; resolve(!!granted); }
+          });
+        } catch (e) {
+          resolve(false);
+        }
+      });
+    },
+
+    /**
+     * Сказать боту, что игрок пришёл по приглашению [inviter]. Бот проверит
+     * подпись данных запуска и напишет пригласившему. text/plain — чтобы
+     * браузер не делал лишний предварительный запрос.
+     */
+    notifyJoined: function (inviter) {
+      try {
+        if (!app || !app.initData) return Promise.resolve(false);
+        return fetch(BOT_SERVER + '/joined', {
+          method: 'POST',
+          headers: { 'content-type': 'text/plain' },
+          body: JSON.stringify({ initData: app.initData, inviter: String(inviter) }),
+        }).then(function (r) {
+          return r.ok;
+        }, function () {
+          return false;
+        });
+      } catch (e) {
+        return Promise.resolve(false);
+      }
+    },
 
     /** true — игра открыта внутри Telegram и облако доступно. */
     init: init,
