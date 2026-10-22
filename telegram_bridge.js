@@ -20,6 +20,15 @@
   /** Сколько ждать, пока скрипт Telegram появится на странице. */
   var WAIT_MS = 3000;
 
+  /**
+   * Сколько ждать скрипт AdsGram. Дольше, чем Telegram: без Telegram игре
+   * нечем сохраняться, и ждать его долго нельзя, а реклама никого не держит —
+   * кнопка просто появится позже. Три секунды не хватало: на медленной сети
+   * скрипт AdsGram не успевал, кнопки не было вовсе, и проверяющий AdsGram не
+   * находил, где в игре реклама.
+   */
+  var ADS_WAIT_MS = 30000;
+
   var app = null;
   var initPromise = null;
 
@@ -122,8 +131,8 @@
             return resolve(false);
           }
         }
-        if (Date.now() - started > WAIT_MS) return resolve(false);
-        setTimeout(poll, 100);
+        if (Date.now() - started > ADS_WAIT_MS) return resolve(false);
+        setTimeout(poll, 200);
       })();
     });
   }
